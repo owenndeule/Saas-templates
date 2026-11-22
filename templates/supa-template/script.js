@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     lightboxPrev = document.querySelector('.lightbox-prev');
     lightboxNext = document.querySelector('.lightbox-next');
 
+    // Header scroll state must work even when config.json fails to load.
+    initializeScrollEffects();
+
     try {
         const response = await fetch('./config.json');
         if (!response.ok) {
@@ -36,7 +39,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         initializeForms(config);
         setCurrentYear();
         renderGallery(config);
-        initializeScrollEffects();
         renderFooter(config);
         initializeBookingModal(config);
         renderTestimonials(config);
@@ -95,7 +97,10 @@ function applyConfig(config) {
 
     // Hero image
     const hero = document.getElementById('home');
-    if (hero && config.heroImage) hero.style.backgroundImage = `url('${config.heroImage}')`;
+    if (hero && config.heroImage) {
+        hero.style.backgroundImage = `url('${config.heroImage}')`;
+        document.documentElement.style.setProperty('--hero-background-image', `url('${config.heroImage}')`);
+    }
 
     // Dynamically update hero CTA button text
     const heroCtaButton = document.getElementById('heroCtaButton');
@@ -307,6 +312,10 @@ function initializeBookingModal(config) {
     document.querySelectorAll('a, button').forEach(el => {
         const text = el.textContent.toLowerCase();
         const isBookLink = el.getAttribute('href') === '#reservations';
+
+        // WhatsApp CTAs should keep their chat destination, even when their
+        // visible label contains "Book".
+        if (el.classList.contains('whatsapp-cta')) return;
         
         if (text.includes('book') || isBookLink) {
             if (useModal) {
@@ -318,6 +327,15 @@ function initializeBookingModal(config) {
                 el.classList.add('whatsapp-cta');
             }
         }
+    });
+
+    // Some WhatsApp CTAs are inserted while applying text overrides, after
+    // the first link pass. Assign their destination after all markup exists.
+    const whatsappUrl = `https://wa.me/${String(config.whatsappNumber || '').replace(/\D/g, '')}`;
+    document.querySelectorAll('.whatsapp-cta').forEach(link => {
+        link.href = whatsappUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
     });
 
     if (bookingModalCloseBtn) bookingModalCloseBtn.addEventListener('click', () => closeBookingModal());
@@ -407,12 +425,17 @@ function renderFooter(config) {
     if (footerSocialLinksContainer && config.socialLinks) {
         footerSocialLinksContainer.innerHTML = '';
         for (const platform in config.socialLinks) {
-            if (config.socialLinks[platform]) {
+            const profileUrl = config.socialLinks[platform]?.trim();
+            if (profileUrl) {
                 const link = document.createElement('a');
-                link.href = config.socialLinks[platform];
+                link.href = /^https?:\/\//i.test(profileUrl)
+                    ? profileUrl
+                    : `https://${profileUrl.replace(/^\/+/, '')}`;
                 link.target = '_blank';
                 link.rel = 'noopener noreferrer';
-                link.setAttribute('aria-label', `${platform.charAt(0).toUpperCase() + platform.slice(1)}`);
+                const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+                link.setAttribute('aria-label', platformName);
+                link.title = `Visit our ${platformName} page`;
                 link.innerHTML = `<svg class="social-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">${getSocialIconSvg(platform)}</svg>`;
                 footerSocialLinksContainer.appendChild(link);
             }
@@ -1031,8 +1054,15 @@ function initializeMobileMenu() {
 
 function initializeScrollEffects() {
     const scrollTopBtn = document.getElementById('scrollTop');
+    const header = document.querySelector('.header');
+
+    const updateHeader = () => {
+        if (header) header.classList.toggle('scrolled', window.scrollY > 0);
+    };
+    updateHeader();
     
     window.addEventListener('scroll', () => {
+        updateHeader();
         // Show/Hide Scroll to Top button
         if (window.scrollY > 500) {
             scrollTopBtn.hidden = false;

@@ -96,11 +96,37 @@ input, select, textarea {
    ============================================ */
 
 .header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    width: 100%;
     z-index: 100;
-    background-color: var(--background-color);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    background-color: transparent;
+    background-image: var(--hero-background-image, url('https://d2xsxph8kpxj0f.cloudfront.net/310419663032304542/T2r4hEDTtoVCedDKJ2fPDL/hero-pizza-jmXbbXhzQf2nukeE4iE5Wi.webp'));
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    box-shadow: none;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease, background-image 0.25s ease;
+}
+
+.header.scrolled {
+    background-color: #fff;
+    background-image: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header:not(.scrolled)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+.header .container {
+    position: relative;
+    z-index: 1;
 }
 
 .header .container {
@@ -123,6 +149,16 @@ input, select, textarea {
     color: var(--accent-color);
     margin: 0;
     line-height: 1.2;
+}
+
+.header:not(.scrolled) .restaurant-name,
+.header:not(.scrolled) .tagline,
+.header:not(.scrolled) .nav-link {
+    color: #fff;
+}
+
+.header:not(.scrolled) .mobile-menu-toggle span {
+    background-color: #fff;
 }
 
 .tagline {
@@ -1022,7 +1058,16 @@ input, select, textarea {
 
 .footer-social a {
     color: #ccc;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: color 0.3s ease;
+}
+
+.footer-social a:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 5px;
+    border-radius: 3px;
 }
 
 /* Testimonials Section */
